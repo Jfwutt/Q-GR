@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP AXTRA ST.129 Ladkrabang — ระบบจัดการคิวรถรับสินค้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#eef3fa;
+    --bg-alt:#ffffff;
+    --surface:#ffffff;
+    --surface-2:#f2f6fb;
+    --border:#dbe5f2;
+    --amber:#ffc72c;
+    --amber-dim:#e0a800;
+    --blue:#0b5fcc;
+    --blue-deep:#0a3d91;
+    --orange:#ff6a39;
+    --green:#1fae73;
+    --red:#d1273f;
+    --text:#16233d;
+    --text-dim:#5b6b85;
+    --text-mute:#93a0b7;
+    --font-display:'Chakra Petch',sans-serif;
+    --font-body:'Sarabun',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(11,95,204,.05), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(255,199,44,.08), transparent 40%);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+  }
+  .hazard{
+    height:6px;
+    background:repeating-linear-gradient(135deg, var(--amber) 0 12px, var(--blue) 12px 24px);
+    opacity:.9;
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;background:var(--bg-alt);
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;gap:14px;
+    box-shadow:0 1px 3px rgba(10,61,145,.05);
+  }
+  .brand{display:flex;align-items:center;gap:13px;}
+  .brand .mark{
+    width:42px;height:42px;border-radius:9px;
+    background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;
+    padding:6px;border:1px solid var(--border);
+  }
+  .brand .mark img{width:100%;height:100%;object-fit:contain;}
+  .brand h1{font-family:var(--font-display);font-size:21px;margin:0;letter-spacing:.5px;color:var(--blue-deep);font-weight:700;}
+  .brand h1 span{color:var(--amber-dim);}
+  .brand p{margin:2px 0 0;font-size:12px;color:var(--text-dim);font-weight:600;letter-spacing:.3px;}
+
+  .switcher{
+    display:flex;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:999px;padding:4px;gap:4px;
+  }
+  .switcher button{
+    border:none;background:transparent;color:var(--text-dim);
+    font-family:var(--font-display);font-size:13px;font-weight:600;
+    padding:9px 20px;border-radius:999px;cursor:pointer;
+    letter-spacing:.3px;transition:.15s;
+  }
+  .switcher button.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(11,95,204,.35);}
+
+  main{max-width:1180px;margin:0 auto;padding:28px;}
+  section{display:none;}
+  section.active{display:block;}
+
+  /* ---------- ticker ---------- */
+  .ticker{
+    background:var(--blue-deep);border:1px solid var(--border);border-radius:8px;
+    overflow:hidden;margin-bottom:22px;position:relative;height:38px;
+  }
+  .ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:30px;z-index:2;}
+  .ticker::before{left:0;background:linear-gradient(90deg,var(--blue-deep),transparent);}
+  .ticker::after{right:0;background:linear-gradient(-90deg,var(--blue-deep),transparent);}
+  .ticker-track{
+    display:flex;align-items:center;height:100%;white-space:nowrap;
+    font-family:var(--font-mono);font-size:13px;color:var(--amber);font-weight:700;
+    animation:scroll 16s linear infinite;
+  }
+  .ticker-track span{padding:0 26px;}
+  @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:1.1fr 1.6fr;gap:22px;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:18px;
+    box-shadow:0 1px 4px rgba(10,61,145,.05);
+  }
+  .card h2{
+    font-family:var(--font-display);font-size:14px;margin:0 0 14px;
+    color:var(--blue-deep);text-transform:uppercase;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:8px;border-bottom:2px solid var(--amber);
+  }
+
+  /* bay cards */
+  .bay{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:8px;padding:14px 16px;margin-bottom:10px;
+  }
+  .bay.empty{opacity:.5;}
+  .bay .bay-id{font-family:var(--font-display);font-size:22px;color:var(--blue-deep);width:46px;}
+  .bay .bay-info{flex:1;padding:0 12px;}
+  .bay .bay-info .code{font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--text);}
+  .bay .bay-info .plate{font-size:12px;color:var(--text-dim);}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(31,174,115,.5);}
+  .dot.idle{background:var(--text-mute);box-shadow:none;}
+
+  /* queue list */
+  .qrow{
+    display:grid;grid-template-columns:70px 1fr 110px 170px;align-items:center;
+    gap:10px;padding:11px 10px;border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  .qrow:last-child{border-bottom:none;}
+  .qrow .code{font-family:var(--font-mono);font-weight:700;color:var(--blue-deep);}
+  .qrow .plate{color:var(--text-dim);}
+  .badge{
+    font-family:var(--font-display);font-size:11px;padding:4px 9px;border-radius:5px;
+    display:inline-block;text-align:center;letter-spacing:.3px;
+  }
+  .badge.waiting{background:rgba(255,199,44,.22);color:#8a5b00;}
+  .badge.serving{background:rgba(31,174,115,.14);color:#0f7a4e;}
+  .badge.done{background:var(--surface-2);color:var(--text-mute);}
+  .badge.skip{background:rgba(209,39,63,.1);color:var(--red);}
+  .row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .mini-btn{
+    border:1px solid var(--border);background:var(--surface-2);color:var(--text-dim);
+    font-size:11px;padding:5px 9px;border-radius:5px;cursor:pointer;font-family:var(--font-body);
+  }
+  .mini-btn:hover{border-color:var(--blue);color:var(--blue);}
+
+  .call-btn{
+    width:100%;margin-top:14px;padding:16px;border-radius:10px;border:none;
+    background:linear-gradient(180deg,var(--amber),#e0a800);
+    color:var(--blue-deep);font-family:var(--font-display);font-weight:700;font-size:15px;
+    letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 0 var(--amber-dim), 0 6px 14px rgba(10,61,145,.15);
+    transition:.08s;
+  }
+  .call-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--amber-dim);}
+
+  /* add truck form */
+  .form-row{display:flex;gap:8px;margin-bottom:10px;}
+  .form-row input{
+    flex:1;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:10px 12px;border-radius:6px;font-family:var(--font-body);font-size:13px;
+  }
+  .form-row input:focus{outline:none;border-color:var(--blue);}
+  .add-btn{
+    background:var(--blue);border:1px solid var(--blue);color:#fff;
+    padding:10px 16px;border-radius:6px;font-family:var(--font-display);font-size:12px;
+    cursor:pointer;letter-spacing:.4px;width:100%;
+  }
+  .add-btn:hover{background:var(--blue-deep);}
+
+  /* ---------- driver view ---------- */
+  .phone-wrap{display:flex;justify-content:center;padding:10px 0 30px;}
+  .phone{
+    width:340px;background:var(--blue-deep);border:1px solid var(--border);
+    border-radius:34px;padding:14px;box-shadow:0 20px 50px rgba(10,61,145,.25);
+  }
+  .phone-screen{
+    background:var(--surface);border-radius:22px;padding:22px 18px;min-height:560px;
+    position:relative;overflow:hidden;
+  }
+  .phone-notch{width:60px;height:5px;background:var(--border);border-radius:3px;margin:0 auto 16px;}
+
+  .driver-plate{
+    text-align:center;font-family:var(--font-mono);color:var(--text-dim);font-size:12px;margin-bottom:2px;
+  }
+  .driver-label{text-align:center;font-family:var(--font-display);font-size:12px;color:var(--text-dim);
+    letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+
+  /* split flap */
+  .flapboard{display:flex;justify-content:center;gap:5px;margin:10px 0 18px;}
+  .flap{
+    width:38px;height:56px;perspective:200px;
+  }
+  .flap-digit{
+    width:100%;height:100%;border-radius:5px;
+    background:linear-gradient(180deg,#33383f,#20242a);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-weight:800;font-size:30px;color:var(--amber);
+    position:relative;box-shadow:inset 0 -3px 0 rgba(0,0,0,.45), 0 2px 5px rgba(0,0,0,.3);
+    transform-style:preserve-3d;
+  }
+  .flap-digit::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.55);}
+  .flap-digit.flip{animation:flipDown .38s ease-in-out;}
+  @keyframes flipDown{0%{transform:rotateX(0);}50%{transform:rotateX(-92deg);}100%{transform:rotateX(0);}}
+
+  .now-serving{
+    text-align:center;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:10px;padding:10px;margin-bottom:16px;
+  }
+  .now-serving .label{font-size:11px;color:var(--text-dim);letter-spacing:.5px;}
+  .now-serving .val{font-family:var(--font-mono);font-weight:700;color:var(--text);font-size:17px;}
+
+  .position-line{margin:18px 0;}
+  .position-line .ptext{text-align:center;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  .position-line b{color:var(--blue);}
+  .rail{
+    position:relative;height:6px;background:var(--surface-2);border-radius:3px;margin:14px 4px 4px;
+  }
+  .rail-fill{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:3px;transition:width .4s;}
+  .truck-icon{
+    position:absolute;top:-11px;transform:translateX(-50%);transition:left .4s;font-size:16px;
+  }
+
+  .status-banner{
+    display:flex;gap:10px;align-items:flex-start;
+    background:rgba(31,174,115,.1);border:1px solid rgba(31,174,115,.3);
+    border-radius:8px;padding:12px 14px;margin:16px 0;font-size:12.5px;color:#0f5c39;line-height:1.5;
+  }
+  .status-banner.alert{background:rgba(255,106,57,.12);border-color:rgba(255,106,57,.35);color:#9a3412;}
+
+  .check-btn{
+    width:100%;padding:14px;border-radius:10px;border:1px solid var(--blue);
+    background:var(--surface-2);color:var(--blue-deep);font-family:var(--font-display);
+    font-weight:600;font-size:13px;letter-spacing:.4px;cursor:pointer;margin-top:6px;
+  }
+  .check-btn:hover{background:var(--blue);color:#fff;}
+
+  .line-connect{
+    margin-top:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+    padding:14px;text-align:center;
+  }
+  .line-connect p{font-size:12px;color:var(--text-dim);margin:0 0 10px;}
+  .line-btn{
+    background:#06c755;border:none;color:#fff;font-family:var(--font-display);
+    font-weight:600;font-size:13px;padding:11px 20px;border-radius:999px;cursor:pointer;width:100%;
+  }
+  .line-btn.connected{background:var(--surface);border:1px solid var(--green);color:var(--green);}
+
+  /* QR modal */
+  .modal-bg{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
+    align-items:center;justify-content:center;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:26px;width:300px;text-align:center;
+  }
+  .modal h3{font-family:var(--font-display);margin:0 0 4px;font-size:16px;}
+  .modal p{font-size:12px;color:var(--text-dim);margin:0 0 16px;}
+  .modal #qrcode{display:flex;justify-content:center;margin-bottom:16px;background:#fff;padding:10px;border-radius:8px;}
+  .modal .close-btn{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:9px 18px;border-radius:6px;cursor:pointer;font-family:var(--font-body);font-size:13px;
+  }
+
+  /* toast */
+  #toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--blue-deep);border:1px solid var(--blue-deep);color:#fff;
+    padding:12px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;
+    transition:.25s;z-index:60;box-shadow:0 10px 30px rgba(10,61,145,.35);
+    font-family:var(--font-body);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAPnElEQVR4AezdC3BU1RkA4P/ubthNQkjIgyRs2PCW4VFL0QCj47RBi1XEjvVZdYo8RBGrYEQcrTLWV0EUp52OreCjCvigDAg+gWKZFoQRKFYYICHkxTNZSLLksUl2139z1swSdpN7795z7rn3HuZwc7N7957//P/HuY9lE1tI/BEZiJMBG4g/IgNxMiBwxEmMeBhA4BAK4mZA4IibGvGEwCEMxM2AwBE3NeIJgUOFAau8ROCwSqVVjFPgUJE0q7xE4LBKpVWMU+BQkTSrvETgsEqlVYxT4FCRNKu8ROCwSqVVjFNTHCr6Fy/hOAMCB8fF0Ts0gUPvCnDcv8DBcXH0Dk3g0LsCHPcvcHBcHL1DEzj0rgDH/QsceheH4/4FDo6Lo3doAofeFeC4f4GD4+LoHZrAoXcFOO5f4OC4OHqHJnDoXQGO+xc4OC6O3qHxi0PvzIj+xWdlhYH4GdBj5gi2g+//ULEC/ncH7LwSdoyEHcPhvz+FfdOh7I9wficEWuIHbNpnmtuCX5f5Sj6pmbjicPbTB5JK9jke25f51IErXj28YEP19lJfS1sQ2P5hjqOpFI49B9/PhsrXoWE3tNdCqA1CHdBRD77v4MQqODQPjpRA/R4IBdimQrfeOgKhf5f57ltbces75a9+fXZPVbO3OdARhEAIzrcE9tY0v76j9rZ3y2d+WLmr4kIwGGIWKEMcKODsRjg4B06+B21nAOIMEpXUfgqHHoTqNyHQzCwRenVU39Lx/JZTt75b/tGBejQRMyn4ID71wf7zv3m7/C//qW1tZzSFsMKBMk6uhqN/gJYKWWVo90LFcjj+CnT4ZG1vzI1qL7Qv2FDzwtbTdU2ypslTvo7Fn554edtpP04s9IfMCsfZzXB8OQQaFYwo1A4n3gXz+kAZCzee+Me35xQVuqU9tHT7mZXfeEMhnFAUpFPFpkxwNB2ByhXKZESGEoCT75vSB8rAOWP13nNB5SVGHzh54KlJJElRX7RdpY8DDygn3pN7NIkxOBP6IDLW7j+vHEYkQTUN7QxOPujj8H0P3i2RMan8YiofZ33h84w1+86rmDOi8/fl4cbdlU3Rj2i+Th+Hd2vntUmCkZvEB8pYuLEGZaieM7ryWNvU8cnBhq5vaazQx1G/S6O4De9DQxkkpTuOXSArlJb0cTSXaxe6gX1oLgOzWlbnxyW9Rh9Hh5LL194HakgfNGRgqhr9su6O4JbqGn0coPntPOJjmVHuj6GMBRqdZ6irsepX0cdh76s6uPgvRB+r4bh8H/H3RPkZImPtPvVXrT0EmO6y9/Bs4k/Rx5HsSTzKWHswgA+qMjAnI3KcuKTX6OPoN4Fa9Fz7oC0Ds3rNUBqzMu440ujjyLoOHOmR3rT/wqkPBjIG9HVMH5uhfUaj9kgfR/oEyJgc1aPmq9z5YCADk3j9qH5FnhRcodfo47CngPt3kJRJbwwAHPlgI2NQRtL8q3OcDrrlo7v3CIj0iVAwCyRH5FsqX7jwwUZGSpL05JS8Kz2pVBIZtVMmOCQbuGdA/t0AVC+9unxoe9stKls9rqKMRzfUULpq7erZ5ZAWFefNnJjV9Qi1FWb/+9yeCkMeg4G/NasPIuODBN6Fl1PjThm5i4pzaR9QSDA28oXF0tEPhjzOxMeazvtj7OYPljIWF+clJzGqGqNuIvjM6IO1jD7sSsaup4t9MDj/YDF/nPG1P7qhhs3RJDxnMJSB9bLhX9YtPH+UwEDD+0AZC5jIeKI4l70MVKEHDuw27APPPwzsg6WMJ/A8g+2cgSXCphMO7NmR1nl+akgfLGUsnpKXrIcMLJF+OLBzY/o44wv/D2EG5xnho8mUPBeraxMsSLemKw6MxWg+cM54lNl5hq4ysDg2/KtzM44PIuND+ne6dJ8zCAkOcGAgRvBxqjF81WodGVgWPnBgINz72HSwYf139Yl/3gTHGq/h3XFO5gwSITc4MBy+fdwyLuOeCZk2CQOl0lAGXphg0/EMtNvAeMKBoXHsI7uvY9lN7hlXZtHwQWTgtMGPDKwGZzgwIo59ZKaGfdxXpLEPPmVgKbTEgbvTpvHtY+k0N/qwS9qMlVsZODwucWBc3PuYUZSVuA+eZWAReMWBobH0Ub4UOhR8Yh2PLzh/oI9Ezj84l4EV4BgHRsfMx6k1UL5MhQ/Vx5fkJAkvTHg7A8WURze+cWCkjHwE4dRadT5w/lB6fEEZ+EYr5zIw99zjwBgZ+QhAeP5QeXyR7wNlLC7O418GJt4IODBMRj7I/EHRB5GxqDjXpd97rZhOmc0gOHA03Pvo9fwjGc8zivO6ycCRcduMgwNTyLePP01zz56UHW9GSHPanrrWSDIw34bCgfFGfNwDdD8fpfL4gvfXl99cMObigwZesk4qTHnzds/jv7j4CRwO381oODCbYR8lMJBHH2ku+/yrc76YO3zNvUOWTM0v+fmAF28YuG7G0E2zht8xPrMP5Y+2Ym60bTZtd8dobxz7kCSpIKPPrZf3f3Zq/rLpBU9em3fj6HR8045RZjTtxpg4MAUc+8DozNEMiwPTL3xgEmg2I+PAvLD0UfE6BFqxT+s0bnHILgEzHydXw5n1ssMyw4bGx4FVYOMj5IealaDlD2TG0LlupsCBGWbjo6Uczn6CvVmkmQUHlouND+8WaPNib1ZoJsKB5WLgo6UCmsuwKys0c+HAitH2EWgSODDNhm3Eh/teoPTzC8O/99SwyVESuOlmDjJ49JF/Nzjd5DuNl0G6v+UkgWg1fqlJcfjPQuVr0FqlcbbI7mx0f24w6YSHpRlxoIyyZ6H2MwA6n2x15vFQOQYxmA4HkVH3Oa3c2ftB6ghaO+dsv+bCQVsGFi91JKQMw69WaCbCwUAGisi5Hij+hhDsgKNmFhxsZPQdBznTOKoe5VBMgYONDDzb8MwDy5yNIjzj45AjAweaYLM5wfMgZF+X4G6M9XKD42AmY9A8KLiP1i1XXskYGYf/DOD9DHpXraRmOGegDM9csLnIA9ZZGhYHyzlDuYxQKNTSFmxoCeAS1w3qyZg4wnPGM1D3Bd2kq5ozWtuDW482LtxYM33VsV/+rRSXuL7taCM+TjdaCns3II6wjGf5lFF5zj9/ffUtb5ev2FG7tdS3p6oZl7iOjzy8vrrqfBuFClLcpdFwcCzjWJ1/zkdVq3Z7ff5gt4o1+oMrd3vnfFiJ23R7iudvDYWDmQzPQ6DwPAOr/sDHVVuO+noo9ldHfQ+uq8Ite9iGo6eA2S8ATHzQLGUMul/RtUlZbSvKwCNIr6NEPQbyYZCZg3MZ66rlyCB0DOTDCDjYyZgPKuaMddXbSns6mhAT0Uuj+OAeh+lkECXoA49EnJ9/8I2DqYw5gDc2SOlkLMPnGcrnjOgd45GIcx8c42AqQ/kZaGIyiBLOffCKg7UMJ6mWnGXic0Z0Lzz74BIH3zIe0GLOMIQP/nBYTAZRgvMHh/c/OMPBsYzS2ta5H1cpvWoltZezxOsX3nzwhINjGVjdg6db99Y04wq9xpsPbnD4T3f+zx3678J7yJ0uBWegRMO00ekv3OBOd9HNGFc+6A6VpLX3JSMZLlArA4fgsEtzJ2dbygcHOCIyvsQCUGx4gwvfaw3fHXeq7oWlDx7uj+mNg5EMVyJzRjQmZj54uH7REEd0DuWts5PxUOc7ak55YfWyFTMfeP6h7/yhHw5jyiBwmPnA+UNHHzrhMLIM6/jQAwc7GSqvWkn5e12S+eNF+te3es0fzHEwlaHsXfheNVy6Afq4f3K2WX2wxYEySp+BOtpXra7OaxPqMogVE/tgiIPI8H5FckpraWMqg4yCpQ98/6Xcy+gn1rHC0VYHZUvAjDIS80FerWCJ17fz/1l9soHF56OY4Aj6ofLPQP3TizrMGdFVZTZ/fH648fktp/0d3T86FR2MJutMcHi3w+mPNQk37k70OJpcGgwzH+99e+6zQ42XBqDtI/RxtDfAqfch2Kxt3BftjQ8ZJCQ2Pi60Bd/YWVvf0kE6pbSkj6N+FzTupxR9eLcoo/BhGMTo2iTcY29/iY+XbqT7/v43lU07jl3oLZaEnqePw7sNAk0JxdjDi4mMgtmKPlXQw/60egp9zJmUTdVHoz+4+VCDVgHH3A99HD5q0wavMkiiu3xkuOzkEc2Xuyqo/avrjJU+jtaTnR1pveBbBhkt8fHijQMp+ag4R/eClj6OYAvJlLJlz1sbQQYZAfrA++svTaPio6mN7tUsfRyS1pOqcWQQH3abFD7/oODDJpEeaC3p40jqr2XsRpNBxk7JR0ay1v/wSLg/LunjSBn5Y18JfzWmDDJsGj4uG+AiO6e0pI8j8xrQ5OcHGVkGKZ62PiSA4hFpZM+UlgxwFINrUKLRh2X8Hvi7n6F0XBr6cKcnTR+TrjQARdvTx5EyHAbcpCim7htHZMwCm7P7Uwb83q7R+emvx2WMd6dQTQB9HJIE+XdB2uUqh2EuGSQJifsYnet66KocvE4mO4wstf5CHwdG7HLDkEXgzMdVZS0ig7u748pGEWtr4uNlVde3OamO5381cFQu3bNRjJoJDuyn/1UwfAk43bgqt9nTYPBCKMCjSR+5LzHUduhj9qTspTe5sdjyA89Lcyy/2X3zWLpnGyQeVjiwt+ypMOo1SC8CORcveKYy8gUomAmmOM/A0cdsdps0a2LWW3cWjncnSzG3iHoQb3kVeVLeuWvwPRMybfhN1FOUVhniwBFkFMHov8Kwp6DvWIhZdSkJkofCoHkwdiUMmA6SA19k7oZlnjYmfcPMYUum5o/JdTntElzyx+WQfpKfjIeS9TOGTh3VT5JibHPJizR4gC0ODLhPNrhnwti34LJXIP9u6HdFWEPykPAZa+4tMOI5GPcWDCmB5MG4rXWap3+fp6/L2zxn2Bu3eWYWZU0qTBmZ48Q2uTB19sSsv9/u2TR72OIpue4MpkdY5jiw4AjfOSB8fYsHjvHroOhfULQdfrYRRr0avq5BFpIeUWFgujacQgZnOmcUZa26s3DXI6OOPDkG285HLnvzjsJ7r8hCPZLEaMLoSoMVy9A1eLHScwYsgaPnFIhn42VA4IiXGfG4nKtKkSWrZkDMHFatvIxxCxwykmTVTQQOq1ZexrgFDhlJsuomAodVK9/buPF5gQOTIFrsDAgcsfMiHsUMCByYBNFiZ0DgiJ0X8ShmQODAJIgWOwMCR+y8iEcxAwIHJkG02BkQOGLnJf6jFnpG4LBQsZUOVeBQmjELbS9wWKjYSocqcCjNmIW2FzgsVGylQxU4lGbMQtsLHBYqttKhaodDac9ie+4zIHBwXyL9AhQ49Ms99z0LHNyXSL8ABQ79cs99zwIH9yXSL8AfAAAA//9mpj0OAAAABklEQVQDALgls8V0xEJUAAAAAElFTkSuQmCC" alt="CP AXTRA"></div>
+    <div>
+      <h1>CP <span>AXTRA</span></h1>
+      <p>ST.129 Ladkrabang &middot; ระบบจัดการคิวรถรับสินค้า</p>
+    </div>
+  </div>
+  <div class="switcher">
+    <button class="active" data-view="staff">หน้าจอพนักงาน</button>
+    <button data-view="driver">หน้าจอคนขับ</button>
+  </div>
+</header>
+<div class="hazard"></div>
+
+<main>
+
+  <!-- ============ STAFF VIEW ============ -->
+  <section id="staff" class="active">
+
+    <div class="ticker">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+
+    <div class="grid">
+      <!-- left: bays + add truck -->
+      <div>
+        <div class="card" style="margin-bottom:18px;">
+          <h2>ช่องรับสินค้า</h2>
+          <div id="bayList"></div>
+        </div>
+
+        <div class="card">
+          <h2>เพิ่มรถเข้าคิว</h2>
+          <div class="form-row">
+            <input id="inpPlate" placeholder="ทะเบียนรถ เช่น 70-1234">
+          </div>
+          <div class="form-row">
+            <input id="inpPhone" placeholder="เบอร์โทรคนขับ">
+          </div>
+          <button class="add-btn" onclick="addTruck()">+ เพิ่มเข้าคิวและออก QR</button>
+        </div>
+      </div>
+
+      <!-- right: queue -->
+      <div class="card">
+        <h2>คิวทั้งหมด</h2>
+        <div id="queueList"></div>
+        <button class="call-btn" onclick="callNext()">📢 เรียกคิวถัดไป</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DRIVER VIEW ============ -->
+  <section id="driver">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+
+          <div class="driver-label">คิวของคุณ</div>
+          <div class="driver-plate" id="driverPlate">ทะเบียน 71-5555</div>
+          <div class="flapboard" id="flapboard"></div>
+
+          <div class="now-serving">
+            <div class="label">ตอนนี้กำลังเรียก</div>
+            <div class="val" id="nowServingVal">A-015</div>
+          </div>
+
+          <div class="position-line">
+            <div class="ptext">คุณอยู่ลำดับที่ <b id="posNum">3</b></div>
+            <div class="rail">
+              <div class="rail-fill" id="railFill"></div>
+              <div class="truck-icon" id="truckIcon">🚚</div>
+            </div>
+          </div>
+
+          <div class="status-banner" id="statusBanner">
+            🟢&nbsp; เมื่อใกล้ถึงคิว ระบบจะแจ้งเตือนให้คุณทราบผ่าน LINE โดยอัตโนมัติ
+          </div>
+
+          <button class="check-btn" onclick="checkStatus()">🔄 เช็กสถานะคิว</button>
+
+          <div class="line-connect">
+            <p>รับแจ้งเตือนอัตโนมัติผ่าน LINE เมื่อใกล้ถึงคิว</p>
+            <button class="line-btn" id="lineBtn" onclick="connectLine()">เชื่อมต่อ LINE เพื่อรับแจ้งเตือน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- QR modal -->
+<div class="modal-bg" id="qrModal">
+  <div class="modal">
+    <h3 id="qrTitle">คิว A-019</h3>
+    <p>ให้คนขับสแกน QR นี้เพื่อเชื่อมต่อ LINE และติดตามคิว</p>
+    <div id="qrcode"></div>
+    <button class="close-btn" onclick="closeModal()">ปิด</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ---------------- state ---------------- */
+let queue = [
+  {code:'A-015', plate:'70-4567', phone:'081-000-1111', status:'serving', bay:3},
+  {code:'A-016', plate:'70-8899', phone:'081-000-2222', status:'waiting', bay:null},
+  {code:'A-017', plate:'70-1234', phone:'081-000-3333', status:'waiting', bay:null},
+  {code:'A-018', plate:'71-5555', phone:'081-000-4444', status:'waiting', bay:null},
+];
+const bays = [
+  {id:1, occupied:false},
+  {id:2, occupied:false},
+  {id:3, occupied:true},
+];
+let nextCodeNum = 19;
+const driverCode = 'A-018'; // the truck this driver-view phone represents
+let lineConnected = false;
+let currentFlap = '';
+
+/* ---------------- view switching ---------------- */
+document.querySelectorAll('.switcher button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.switcher button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(btn.dataset.view).classList.add('active');
+    if(btn.dataset.view==='driver') renderDriver();
+  });
+});
+
+/* ---------------- toast ---------------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------------- ticker ---------------- */
+function renderTicker(){
+  const serving = queue.find(q=>q.status==='serving');
+  const waitingCount = queue.filter(q=>q.status==='waiting').length;
+  const text = serving
+    ? `กำลังเรียก ${serving.code} • ช่อง ${serving.bay} • เหลืออีก ${waitingCount} คันในคิว`
+    : `ยังไม่มีการเรียกคิว • เหลืออีก ${waitingCount} คันในคิว`;
+  document.getElementById('tickerTrack').innerHTML = `<span>🔔 ${text}</span><span>🔔 ${text}</span>`;
+}
+
+/* ---------------- bays ---------------- */
+function renderBays(){
+  const list = document.getElementById('bayList');
+  list.innerHTML = bays.map(b=>{
+    const truck = queue.find(q=>q.bay===b.id && q.status==='serving');
+    if(truck){
+      return `<div class="bay">
+        <div class="bay-id">${b.id}</div>
+        <div class="bay-info"><div class="code">${truck.code}</div><div class="plate">${truck.plate}</div></div>
+        <span class="dot"></span>
+      </div>`;
+    }
+    return `<div class="bay empty">
+      <div class="bay-id">${b.id}</div>
+      <div class="bay-info"><div class="code">ว่าง</div><div class="plate">พร้อมรับรถคันถัดไป</div></div>
+      <span class="dot idle"></span>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- queue list ---------------- */
+const statusLabel = {waiting:'รอคิว', serving:'กำลังโหลด', done:'เสร็จสิ้น', skip:'ข้าม'};
+
+function renderQueue(){
+  const list = document.getElementById('queueList');
+  list.innerHTML = queue.map(q=>{
+    let actions = '';
+    if(q.status==='waiting'){
+      actions = `<button class="mini-btn" onclick="skipTruck('${q.code}')">ข้าม</button>`;
+    } else if(q.status==='serving'){
+      actions = `<button class="mini-btn" onclick="finishTruck('${q.code}')">เสร็จสิ้น</button>`;
+    } else if(q.status==='skip'){
+      actions = `<button class="mini-btn" onclick="requeueTruck('${q.code}')">คืนคิว</button>`;
+    }
+    return `<div class="qrow">
+      <div class="code">${q.code}</div>
+      <div class="plate">${q.plate}</div>
+      <div><span class="badge ${q.status}">${statusLabel[q.status]}</span></div>
+      <div class="row-actions">${actions}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderBays();
+  renderQueue();
+  renderTicker();
+}
+
+/* ---------------- staff actions ---------------- */
+function callNext(){
+  const serving = queue.find(q=>q.status==='serving');
+  if(serving){ serving.status='done'; freeBay(serving.bay); serving.bay=null; }
+  const next = queue.find(q=>q.status==='waiting');
+  if(!next){ toast('ไม่มีรถรอคิวแล้ว'); renderAll(); return; }
+  const freeBayObj = bays.find(b=>!b.occupied);
+  if(freeBayObj){ freeBayObj.occupied = true; next.bay = freeBayObj.id; }
+  next.status='serving';
+  toast(`🔔 ส่งแจ้งเตือนไปหาคนขับ ${next.code} แล้ว — เชิญเข้าช่อง ${next.bay ?? '-'}`);
+  renderAll();
+}
+function freeBay(id){ const b = bays.find(x=>x.id===id); if(b) b.occupied=false; }
+
+function skipTruck(code){
+  const t = queue.find(q=>q.code===code);
+  t.status='skip';
+  toast(`⏭️ ข้ามคิว ${code} แล้ว — จัดลำดับใหม่`);
+  queue = queue.filter(q=>q.code!==code).concat(t);
+  renderAll();
+}
+function requeueTruck(code){
+  const t = queue.find(q=>q.code===code);
+  t.status='waiting';
+  toast(`↩️ คืนคิว ${code} เข้าแถวรออีกครั้ง`);
+  renderAll();
+}
+function finishTruck(code){
+  const t = queue.find(q=>q.code===code);
+  t.status='done'; freeBay(t.bay); t.bay=null;
+  toast(`✅ ${code} รับสินค้าเสร็จสิ้น`);
+  renderAll();
+}
+
+function addTruck(){
+  const plate = document.getElementById('inpPlate').value.trim();
+  const phone = document.getElementById('inpPhone').value.trim();
+  if(!plate){ toast('กรุณากรอกทะเบียนรถ'); return; }
+  const code = 'A-0' + (nextCodeNum++);
+  queue.push({code, plate, phone, status:'waiting', bay:null});
+  document.getElementById('inpPlate').value='';
+  document.getElementById('inpPhone').value='';
+  renderAll();
+  openModal(code);
+}
+
+/* ---------------- QR modal ---------------- */
+function openModal(code){
+  document.getElementById('qrTitle').textContent = `คิว ${code}`;
+  const qrEl = document.getElementById('qrcode');
+  qrEl.innerHTML = '';
+  new QRCode(qrEl, {
+    text: `https://dockq.example.com/track/${code}`,
+    width: 160, height: 160,
+    colorDark: '#15161a', colorLight: '#ffffff'
+  });
+  document.getElementById('qrModal').classList.add('show');
+}
+function closeModal(){ document.getElementById('qrModal').classList.remove('show'); }
+
+/* ---------------- driver view ---------------- */
+function setFlap(el, char){
+  if(el.textContent === char) return;
+  el.classList.add('flip');
+  setTimeout(()=>{ el.textContent = char; }, 190);
+  el.addEventListener('animationend', ()=>el.classList.remove('flip'), {once:true});
+}
+
+function renderFlapboard(code){
+  const board = document.getElementById('flapboard');
+  if(board.children.length !== code.length){
+    board.innerHTML = code.split('').map(()=>`<div class="flap"><div class="flap-digit"></div></div>`).join('');
+  }
+  const cells = board.querySelectorAll('.flap-digit');
+  code.split('').forEach((ch,i)=> setFlap(cells[i], ch));
+}
+
+function renderDriver(){
+  const me = queue.find(q=>q.code===driverCode);
+  const servingIdx = queue.findIndex(q=>q.status==='serving');
+  const myIdx = queue.findIndex(q=>q.code===driverCode);
+  const waitingBefore = queue.slice(0, myIdx).filter(q=>q.status==='waiting').length;
+  const serving = queue.find(q=>q.status==='serving');
+
+  document.getElementById('driverPlate').textContent = `ทะเบียน ${me ? me.plate : '-'}`;
+  renderFlapboard(me ? me.code : '----');
+  document.getElementById('nowServingVal').textContent = serving ? serving.code : '—';
+  document.getElementById('posNum').textContent = me && me.status==='waiting' ? (waitingBefore+1) : (me && me.status==='serving' ? '0 (ถึงคิวแล้ว)' : '-');
+
+  const totalWaiting = queue.filter(q=>q.status==='waiting').length + (me && me.status==='waiting'?0:0);
+  const progressBase = Math.max(totalWaiting,1) + waitingBefore;
+  const pct = me && me.status!=='waiting' ? 100 : Math.max(6, 100 - (waitingBefore / progressBase) * 100);
+  document.getElementById('railFill').style.width = pct + '%';
+  document.getElementById('truckIcon').style.left = pct + '%';
+
+  const banner = document.getElementById('statusBanner');
+  if(!me || me.status==='waiting'){
+    if(waitingBefore <= 2 && waitingBefore>0){
+      banner.className='status-banner alert';
+      banner.innerHTML = `🟠&nbsp; ใกล้ถึงคิวของคุณแล้ว เหลืออีก ${waitingBefore} คัน กรุณาเตรียมตัวเข้าจุดรับสินค้า`;
+    } else if(waitingBefore===0){
+      banner.className='status-banner alert';
+      banner.innerHTML = `🚨&nbsp; ถึงคิวแล้ว! กรุณาเข้าจุดรับสินค้าได้เลยครับ`;
+    } else {
+      banner.className='status-banner';
+      banner.innerHTML = `🟢&nbsp; เมื่อใกล้ถึงคิว ระบบจะแจ้งเตือนให้คุณทราบผ่าน LINE โดยอัตโนมัติ`;
+    }
+  } else if(me.status==='serving'){
+    banner.className='status-banner alert';
+    banner.innerHTML = `🚨&nbsp; ถึงคิวแล้ว! กรุณาเข้าจุดรับสินค้า — ช่องรับสินค้า ${me.bay}`;
+  } else {
+    banner.className='status-banner';
+    banner.innerHTML = `✅&nbsp; รับสินค้าเรียบร้อยแล้ว ขอบคุณครับ`;
+  }
+}
+
+function checkStatus(){
+  renderDriver();
+  toast('อัปเดตสถานะคิวล่าสุดแล้ว');
+}
+
+function connectLine(){
+  lineConnected = true;
+  const btn = document.getElementById('lineBtn');
+  btn.textContent = '✓ เชื่อมต่อ LINE แล้ว';
+  btn.classList.add('connected');
+  toast('✅ เชื่อมต่อ LINE สำเร็จ (จำลอง) — จะแจ้งเตือนผ่าน LINE อัตโนมัติ');
+}
+
+/* ---------------- init ---------------- */
+renderAll();
+renderDriver();
+</script>
+
+</body>
+</html>
